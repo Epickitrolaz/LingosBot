@@ -150,26 +150,29 @@ def click_enter_button_only(timeout: int = 5):
 
 def add_db(question: str, answer: str):
     time.sleep(FORCE_WAIT_SEC)
-    question_str = question.text if hasattr(question, 'text') else str(question)
-    answer_str = answer.text if hasattr(answer, 'text') else str(answer)
-    new_entry = {question_str: answer_str}
-    print(f"Adding to DB: {new_entry}")
+    if APPEND_TO_DB:
+        question_str = question.text if hasattr(question, 'text') else str(question)
+        answer_str = answer.text if hasattr(answer, 'text') else str(answer)
+        new_entry = {question_str: answer_str}
+        print(f"Adding to DB: {new_entry}")
 
-    try:
-        with open("db.json", "r+") as db_file:
-            data = json.load(db_file)
-            data["lingos"].append(new_entry)
-            db_file.seek(0)  # Move pointer to start of file
-            json.dump(data, db_file, indent=4)
-            db_file.truncate()  # Remove existing data
+        try:
+            with open("db.json", "r+") as db_file:
+                data = json.load(db_file)
+                data["lingos"].append(new_entry)
+                db_file.seek(0)  # Move pointer to start of file
+                json.dump(data, db_file, indent=4)
+                db_file.truncate()  # Remove existing data
 
-    except FileNotFoundError:
-        with open("db.json", "w") as db_file:
-            data = {"lingos": [new_entry]}
-            json.dump(data, db_file, indent=4)
+        except FileNotFoundError:
+            with open("db.json", "w") as db_file:
+                data = {"lingos": [new_entry]}
+                json.dump(data, db_file, indent=4)
 
-    except Exception as e:
-        print(f"Error adding to DB: {e}")
+        except Exception as e:
+            print(f"Error adding to DB: {e}")
+    else:
+        print("Not appending to DB.")
 
 
 def query_db(question: str):
@@ -374,7 +377,11 @@ def translate_without_word():
 
 def new_word(native: str, foreign: str):
     time.sleep(FORCE_WAIT_SEC)
-    add_db(foreign, native)
+    if APPEND_TO_DB:
+        add_db(foreign, native)
+        print(f"{foreign}:{native} added to DB")
+    else:
+        print("Not appending to DB.")
     print("Clicking Enter to dismiss new word card.")
     click_enter_button_only(5)
 
