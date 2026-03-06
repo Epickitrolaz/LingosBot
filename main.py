@@ -21,6 +21,9 @@ PASSWORD = os.getenv("PASSWORD")
 FORCE_WAIT_SEC = float(os.getenv("FORCE_WAIT_SEC"))
 CHANCE_OF_PASSING = float(os.getenv("CHANCE_OF_PASSING"))
 HEADLESS = int(os.getenv("HEADLESS"))
+SCRAPE = int(os.getenv("SCRAPE"))
+APPEND_TO_DB = int(os.getenv("APPEND_TO_DB"))
+LOCKUP_PREVENTION = int(os.getenv("LOCKUP_PREVENTION"))
 CLEAR_DB_BEFORE_SESSION = int(os.getenv("CLEAR_DB_BEFORE_SESSION"))
 
 driver = None
@@ -382,7 +385,9 @@ def main():
     global AUTOMATED_LOGIN
 
     try:
+        print("Opening website...")
         open_website("https://lingos.pl")
+        print("Browser running and website loaded\n")
 
         # --- Automated login ---
         if AUTOMATED_LOGIN:
@@ -410,7 +415,13 @@ def main():
             print("Log in to the website and go to the learning page (e.g., 'Learn' section).")
             input("Press ENTER after the lesson is loaded: ")
 
-        scrape_translations(10)
+        # Only scrape if it's enabled in .env
+        if SCRAPE:
+            print("Translation scraping turned on.")
+            scrape_translations(10)
+        else:
+            print("Translation scraping disabled, will continue with entries from DB.")
+
         # --- Lesson Loop ---
         lessons_to_do = LESSON_COUNT if AUTOMATED_LOGIN else 1
         for i in range(lessons_to_do):
