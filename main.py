@@ -21,12 +21,15 @@ PASSWORD = os.getenv("PASSWORD")
 FORCE_WAIT_SEC = float(os.getenv("FORCE_WAIT_SEC"))
 CHANCE_OF_PASSING = float(os.getenv("CHANCE_OF_PASSING"))
 HEADLESS = int(os.getenv("HEADLESS"))
+SCRAPE = int(os.getenv("SCRAPE"))
+APPEND_TO_DB = int(os.getenv("APPEND_TO_DB"))
+LOCKUP_PREVENTION = int(os.getenv("LOCKUP_PREVENTION"))
 CLEAR_DB_BEFORE_SESSION = int(os.getenv("CLEAR_DB_BEFORE_SESSION"))
 
 driver = None
 
 
-def remove_db():
+def nuke_db():
     # This function is essential when running this bot in prod
     print(f"REMOVING ALL DATABASE ENTRIES...")
 
@@ -147,23 +150,59 @@ def click_enter_button_only(timeout: int = 5):
 
 def add_db(question: str, answer: str):
     time.sleep(FORCE_WAIT_SEC)
-    question_str = question.text if hasattr(question, 'text') else str(question)
-    answer_str = answer.text if hasattr(answer, 'text') else str(answer)
-    new_entry = {question_str: answer_str}
-    print(f"Adding to DB: {new_entry}")
+    if APPEND_TO_DB:
+        question_str = question.text if hasattr(question, 'text') else str(question)
+        answer_str = answer.text if hasattr(answer, 'text') else str(answer)
+        new_entry = {question_str: answer_str}
+        print(f"Adding to DB: {new_entry}")
+
+        try:
+            with open("db.json", "r+") as db_file:
+                data = json.load(db_file)
+                data["lingos"].append(new_entry)
+                db_file.seek(0)  # Move pointer to start of file
+                json.dump(data, db_file, indent=4)
+                db_file.truncate()  # Remove existing data
+
+        except FileNotFoundError:
+            with open("db.json", "w") as db_file:
+                data = {"lingos": [new_entry]}
+                json.dump(data, db_file, indent=4)
+
+        except Exception as e:
+            print(f"Error adding to DB: {e}")
+    else:
+        print("Not appending to DB.")
+
+
+def remove_db(qustion_answer: str):
+    time.sleep(FORCE_WAIT_SEC)
+    print(f"Removing from DB: {qustion_answer}")
 
     try:
         with open("db.json", "r+") as db_file:
             data = json.load(db_file)
-            data["lingos"].append(new_entry)
-            db_file.seek(0)  # Move pointer to start of file
-            json.dump(data, db_file, indent=4)
-            db_file.truncate()  # Remove existing data
+            old_length = len(data.get("lingos", []))
+
+            # I fucking hate this part
+            data["lingos"] = [
+                    entry for entry in data.get("lingos", [])
+                    if not any(q == qustion_answer or a == qustion_answer for q, a in entry.items())
+            ]
+
+            new_length = len(data["lingos"])
+
+            # If any items were removed, sync the db with the ram
+            if old_length - new_length > 0:
+                db_file.seek(0)
+                json.dump(data, db_file, indent=4)
+                db_file.truncate()
+                print(f"Removed {old_length - new_length} items from DB.")
+            else:
+                print(f"No matching entries found, nothing removed.")
 
     except FileNotFoundError:
-        with open("db.json", "w") as db_file:
-            data = {"lingos": [new_entry]}
-            json.dump(data, db_file, indent=4)
+        print("DB file not found.")
 
     except Exception as e:
         print(f"Error adding to DB: {e}")
@@ -356,6 +395,18 @@ def translate_without_word():
     print("Clicking Enter to submit answer.")
     click_enter_button_only(5)
 
+    # Check if the website reported the translation as correct
+    if LOCKUP_PREVENTION:
+        # Get the entered translation
+        final_translation_text = driver.find_element(By.ID, "flashcard_error_text")
+        # Check if the incorrect tranlation is visible 
+        final_translation_text_visibility = final_translation_text.value_of_css_property("display")
+
+        if not "none" in final_translation_text_visibility:
+            print("Warning: translation in the DB doesn't match one on the website, removing the incorrect DB entry...")
+            remove_db(translation_to_enter)
+            add_db()
+
     try:
         # Check if the correction/feedback element appears
         wait_for_element(By.ID, "flashcard_error_correct", 5, EC.visibility_of_element_located)
@@ -371,7 +422,11 @@ def translate_without_word():
 
 def new_word(native: str, foreign: str):
     time.sleep(FORCE_WAIT_SEC)
-    add_db(foreign, native)
+    if APPEND_TO_DB:
+        add_db(foreign, native)
+        print(f"{foreign}:{native} added to DB")
+    else:
+        print("Not appending to DB.")
     print("Clicking Enter to dismiss new word card.")
     click_enter_button_only(5)
 
@@ -382,7 +437,9 @@ def main():
     global AUTOMATED_LOGIN
 
     try:
+        print("Opening website...")
         open_website("https://lingos.pl")
+        print("Browser running and website loaded\n")
 
         # --- Automated login ---
         if AUTOMATED_LOGIN:
@@ -410,7 +467,13 @@ def main():
             print("Log in to the website and go to the learning page (e.g., 'Learn' section).")
             input("Press ENTER after the lesson is loaded: ")
 
-        scrape_translations(10)
+        # Only scrape if it's enabled in .env
+        if SCRAPE:
+            print("Translation scraping turned on.")
+            scrape_translations(10)
+        else:
+            print("Translation scraping disabled, will continue with entries from DB.")
+
         # --- Lesson Loop ---
         lessons_to_do = LESSON_COUNT if AUTOMATED_LOGIN else 1
         for i in range(lessons_to_do):
@@ -493,7 +556,7 @@ def main():
 if __name__ == "__main__":
     try:
         if CLEAR_DB_BEFORE_SESSION:
-            remove_db()
+            nuke_db()
         else:
             clean_db(True, True)
 
