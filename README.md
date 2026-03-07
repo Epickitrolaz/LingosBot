@@ -42,6 +42,12 @@ AUTOMATED_LOGIN - (0/1) Should the code log in by itself using the specified cre
 
 HEADLESS - (0/1) Should the browser run in a headless mode? (without a window)
 
+SCRAPE - (0/1) Should the code scrape the translation list before starting?
+
+APPEND_TO_DB - (0/1) Should the code append new words to the database?
+
+LOCKUP_PREVENTION - (0/1) Should the bad translation lockup fix be enabled?
+
 CLEAR_DB_BEFORE_SESSION - (0/1) Should the code remove all DB entries before every session?
 
 FORCE_WAIT_SEC - (float) For debugging. How long should the code wait between actions
