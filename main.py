@@ -29,7 +29,7 @@ CLEAR_DB_BEFORE_SESSION = int(os.getenv("CLEAR_DB_BEFORE_SESSION"))
 driver = None
 
 
-def remove_db():
+def nuke_db():
     # This function is essential when running this bot in prod
     print(f"REMOVING ALL DATABASE ENTRIES...")
 
@@ -173,6 +173,39 @@ def add_db(question: str, answer: str):
             print(f"Error adding to DB: {e}")
     else:
         print("Not appending to DB.")
+
+
+def remove_db(qustion_answer: str):
+    time.sleep(FORCE_WAIT_SEC)
+    print(f"Removing from DB: {qustion_answer}")
+
+    try:
+        with open("db.json", "r+") as db_file:
+            data = json.load(db_file)
+            old_length = len(data.get("lingos", []))
+
+            # I fucking hate this part
+            data["lingos"] = [
+                    entry for entry in data.get("lingos", [])
+                    if not any(q == qustion_answer or a == qustion_answer for q, a in entry.items())
+            ]
+
+            new_length = len(data["lingos"])
+
+            # If any items were removed, sync the db with the ram
+            if old_length - new_length > 0:
+                db_file.seek(0)
+                json.dump(data, db_file, indent=4)
+                db_file.truncate()
+                print(f"Removed {old_length - new_length} items from DB.")
+            else:
+                print(f"No matching entries found, nothing removed.")
+
+    except FileNotFoundError:
+        print("DB file not found.")
+
+    except Exception as e:
+        print(f"Error adding to DB: {e}")
 
 
 def query_db(question: str):
@@ -362,6 +395,18 @@ def translate_without_word():
     print("Clicking Enter to submit answer.")
     click_enter_button_only(5)
 
+    # Check if the website reported the translation as correct
+    if LOCKUP_PREVENTION:
+        # Get the entered translation
+        final_translation_text = driver.find_element(By.ID, "flashcard_error_text")
+        # Check if the incorrect tranlation is visible 
+        final_translation_text_visibility = final_translation_text.value_of_css_property("display")
+
+        if not "none" in final_translation_text_visibility:
+            print("Warning: translation in the DB doesn't match one on the website, removing the incorrect DB entry...")
+            remove_db(translation_to_enter)
+            add_db()
+
     try:
         # Check if the correction/feedback element appears
         wait_for_element(By.ID, "flashcard_error_correct", 5, EC.visibility_of_element_located)
@@ -511,7 +556,7 @@ def main():
 if __name__ == "__main__":
     try:
         if CLEAR_DB_BEFORE_SESSION:
-            remove_db()
+            nuke_db()
         else:
             clean_db(True, True)
 
