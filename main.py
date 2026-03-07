@@ -150,29 +150,26 @@ def click_enter_button_only(timeout: int = 5):
 
 def add_db(question: str, answer: str):
     time.sleep(FORCE_WAIT_SEC)
-    if APPEND_TO_DB:
-        question_str = question.text if hasattr(question, 'text') else str(question)
-        answer_str = answer.text if hasattr(answer, 'text') else str(answer)
-        new_entry = {question_str: answer_str}
-        print(f"Adding to DB: {new_entry}")
+    question_str = question.text if hasattr(question, 'text') else str(question)
+    answer_str = answer.text if hasattr(answer, 'text') else str(answer)
+    new_entry = {question_str: answer_str}
+    print(f"Adding to DB: {new_entry}")
 
-        try:
-            with open("db.json", "r+") as db_file:
-                data = json.load(db_file)
-                data["lingos"].append(new_entry)
-                db_file.seek(0)  # Move pointer to start of file
-                json.dump(data, db_file, indent=4)
-                db_file.truncate()  # Remove existing data
+    try:
+        with open("db.json", "r+") as db_file:
+            data = json.load(db_file)
+            data["lingos"].append(new_entry)
+            db_file.seek(0)  # Move pointer to start of file
+            json.dump(data, db_file, indent=4)
+            db_file.truncate()  # Remove existing data
 
-        except FileNotFoundError:
-            with open("db.json", "w") as db_file:
-                data = {"lingos": [new_entry]}
-                json.dump(data, db_file, indent=4)
+    except FileNotFoundError:
+        with open("db.json", "w") as db_file:
+            data = {"lingos": [new_entry]}
+            json.dump(data, db_file, indent=4)
 
-        except Exception as e:
-            print(f"Error adding to DB: {e}")
-    else:
-        print("Not appending to DB.")
+    except Exception as e:
+        print(f"Error adding to DB: {e}")
 
 
 def remove_db(qustion_answer: str):
@@ -337,8 +334,12 @@ def translate_without_word():
             translation_content_element = wait_for_element(By.ID, "flashcard_error_correct", 5, EC.visibility_of_element_located)
             translation_on_page = translation_content_element.text.strip()[:500]
 
-            # Add the new translation to the DB and prepare to enter it
-            add_db(question_text, translation_on_page)
+            if APPEND_TO_DB:
+                # Add the new translation to the DB and prepare to enter it
+                add_db(question_text, translation_on_page)
+            else:
+                print("Not appending to DB.")
+
             print(f"Translation from page: {translation_on_page}")
             translation_to_enter = translation_on_page
 
@@ -396,7 +397,7 @@ def translate_without_word():
     click_enter_button_only(5)
 
     # Check if the website reported the translation as correct
-    if LOCKUP_PREVENTION:
+    if LOCKUP_PREVENTION and chance < 1:
         # Get the entered translation
         final_translation_text = driver.find_element(By.ID, "flashcard_error_text")
         # Check if the incorrect tranlation is visible 
