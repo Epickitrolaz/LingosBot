@@ -405,7 +405,6 @@ def translate_without_word():
         if not "none" in final_translation_text_visibility:
             print("Warning: translation in the DB doesn't match one on the website, removing the incorrect DB entry...")
             remove_db(translation_to_enter)
-            add_db()
 
     try:
         # Check if the correction/feedback element appears
