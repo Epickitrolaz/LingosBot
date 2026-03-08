@@ -327,6 +327,7 @@ def translate_without_word():
 
     # Handle cases: translation not found vs. found
     if translation_from_db is None:
+        chance = 0 # Removes the error with the lockup prevention null variable
         print("Translation not in DB. Revealing answer on page.")
         try:
             # Click Enter to reveal the translation
