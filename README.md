@@ -50,4 +50,4 @@ LOCKUP_PREVENTION - (0/1) Should the bad translation lockup fix be enabled?
 
 CLEAR_DB_BEFORE_SESSION - (0/1) Should the code remove all DB entries before every session?
 
-FORCE_WAIT_SEC - (float) For debugging. How long should the code wait between actions
+FORCE_WAIT_SEC - (float) For debugging. How long should the code wait between actions?
