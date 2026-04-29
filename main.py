@@ -52,13 +52,14 @@ def nuke_db():
 
 
 def clean_db(remove_duplicates=True, sort_entries=True):
+    # This function will setup, clean and fix errors with the DB
     try:
         # Try loading JSON
         try:
             with open("db.json", "r", encoding="utf-8") as db_file:
                 data = json.load(db_file)
                 if not isinstance(data, dict):
-                    print("Invalid JSON root (not an object). Resetting database.")
+                    print("Invalid JSON root (not an object). REMOVING ALL DATABASE ENTRIES....")
                     data = {}
         except (FileNotFoundError, json.JSONDecodeError):
             print("db.json not found or invalid. Creating new database.")
