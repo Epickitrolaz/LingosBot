@@ -1,55 +1,79 @@
 # LingosBot
-A bot for lingos.pl made with python and selenium
 
-## Setup on Linux:
-```
-Install python, python-pip, python-venv, firefox
+A bot for [lingos.pl](https://lingos.pl) built with Python and Selenium.
 
-git clone https://github.com/PixelGames987/LingosBot
-cd LingosBot
-chmod +x setup.sh start.sh
-./setup.sh
+---
 
-Copy the contents of .env.example into .env and set your email, password and other parameters
+## 🛠️ Setup & Installation
 
-Run with ./start.sh
-```
+### Linux
 
-## Setup on Windows:
-```
-Install Python (newest), git and Firefox
-Open cmd and go to the desktop
+**Prerequisites:**
+Ensure you have `python`, `python-pip`, `python-venv`, and `firefox` packages installed on your system.
 
-git clone https://github.com/PixelGames987/LingosBot
-cd LingosBot
-setup.bat
+**Installation:**
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Epickitrolaz/LingosBot
+   cd LingosBot
+   ```
+2. Make the scripts executable:
+   ```bash
+   chmod +x setup.sh start.sh
+   ```
+3. Run the setup script:
+   ```bash
+   ./setup.sh
+   ```
+4. Copy the environment template and configure your options:
+   ```bash
+   cp .env.example .env
+   ```
+   *(Open `.env` in your text editor and set your email, password, and other variables).*
+5. Start the bot:
+   ```bash
+   ./start.sh
+   ```
 
-Copy the contents of .env.example into .env and set your email, password and other parameters
+### Windows
 
-Run with start.bat
-```
+**Prerequisites:**
+Ensure you have the latest version of [Python](https://www.python.org/downloads/), [Git](https://git-scm.com/), and [Firefox](https://www.mozilla.org/en-US/firefox/new/) installed.
 
-## Env variables:
-LESSON_COUNT - (int) Number of lessons to do per session
+**Installation Steps:**
+1. Open Command Prompt (`cmd`) and navigate to your desired directory (e.g., Desktop).
+2. Clone the repository:
+   ```cmd
+   git clone https://github.com/Epickitrolaz/LingosBot
+   cd LingosBot
+   ```
+3. Run the setup script:
+   ```cmd
+   setup.bat
+   ```
+4. Copy the contents of `.env.example` into a new `.env` file, configure your credentials and other variables.
+5. Start the bot:
+   ```cmd
+   start.bat
+   ```
 
-CHANCE_OF_PASSING - (float) Chance of the bot to be correct/incorrect. 1 - correct everytime, 3 - correct every 3 questions, etc.
+---
 
-EMAIL - (str) Your email
+## ⚙️ Environment Variables
 
-PASSWORD - (str) Your password
+Configure the bot's behavior by editing the `.env` file. Below are the available variables and their usage:
 
-ENABLE_CHALLENGES - (0/1) Should the bot automatically select challenges for more points?
-
-AUTOMATED_LOGIN - (0/1) Should the code log in by itself using the specified credentials?
-
-HEADLESS - (0/1) Should the browser run in a headless mode? (without a window)
-
-SCRAPE - (0/1) Should the code scrape the translation list before starting?
-
-APPEND_TO_DB - (0/1) Should the code append new words to the database?
-
-LOCKUP_PREVENTION - (0/1) Should the bad translation lockup fix be enabled?
-
-CLEAR_DB_BEFORE_SESSION - (0/1) Should the code remove all DB entries before every session?
-
-FORCE_WAIT_SEC - (float) For debugging. How long should the code wait between actions?
+| Variable | Type | Description |
+| :--- | :---: | :--- |
+| `EMAIL` | `str` | Your lingos.pl login email. |
+| `PASSWORD` | `str` | Your lingos.pl login password. |
+| `LESSON_COUNT` | `int` | Number of lessons to complete per session. |
+| `CHANCE_OF_PASSING` | `float` | Chance of the bot being correct. `1` = correct every time, `3` = correct every 3 questions, etc. |
+| `ENABLE_CHALLENGES` | `0/1` | Should the bot automatically select challenges for more points? |
+| `AUTOMATED_LOGIN` | `0/1` | Should the bot log in automatically using the provided credentials? |
+| `HEADLESS` | `0/1` | Should the browser run in headless mode (hidden window, good for a headless server)? |
+| `SCRAPE` | `0/1` | Should the code get the translation list before starting? |
+| `APPEND_TO_DB` | `0/1` | Should new words be appended to the local database while running? |
+| `LOCKUP_PREVENTION` | `0/1` | Enables the fix to prevent lockups on bad translations. |
+| `CLEAR_DB_BEFORE_SESSION`| `0/1` | Removes all database entries before starting a new session. |
+| `FORCE_WAIT_SEC` | `float` | **For debugging.** How long the code should wait between actions (in seconds). |
