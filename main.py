@@ -14,17 +14,18 @@ import random
 
 load_dotenv()
 
-AUTOMATED_LOGIN = int(os.getenv("AUTOMATED_LOGIN"))
-LESSON_COUNT = int(os.getenv("LESSON_COUNT"))
+AUTOMATED_LOGIN = int(os.getenv("AUTOMATED_LOGIN", "0"))
+LESSON_COUNT = int(os.getenv("LESSON_COUNT", "3"))
 EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
-FORCE_WAIT_SEC = float(os.getenv("FORCE_WAIT_SEC"))
-CHANCE_OF_PASSING = float(os.getenv("CHANCE_OF_PASSING"))
-HEADLESS = int(os.getenv("HEADLESS"))
-SCRAPE = int(os.getenv("SCRAPE"))
-APPEND_TO_DB = int(os.getenv("APPEND_TO_DB"))
-LOCKUP_PREVENTION = int(os.getenv("LOCKUP_PREVENTION"))
-CLEAR_DB_BEFORE_SESSION = int(os.getenv("CLEAR_DB_BEFORE_SESSION"))
+ENABLE_CHALLENGES = os.getenv("ENABLE_CHALLENGES", "0")
+FORCE_WAIT_SEC = float(os.getenv("FORCE_WAIT_SEC", "0"))
+CHANCE_OF_PASSING = float(os.getenv("CHANCE_OF_PASSING", "1.2"))
+HEADLESS = int(os.getenv("HEADLESS", "0"))
+SCRAPE = int(os.getenv("SCRAPE", "0"))
+APPEND_TO_DB = int(os.getenv("APPEND_TO_DB", "1"))
+LOCKUP_PREVENTION = int(os.getenv("LOCKUP_PREVENTION", "1"))
+CLEAR_DB_BEFORE_SESSION = int(os.getenv("CLEAR_DB_BEFORE_SESSION", "0"))
 
 driver = None
 
