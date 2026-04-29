@@ -38,6 +38,8 @@ EMAIL - (str) Your email
 
 PASSWORD - (str) Your password
 
+ENABLE_CHALLENGES - (0/1) Should the bot automatically select challenges for more points?
+
 AUTOMATED_LOGIN - (0/1) Should the code log in by itself using the specified credentials?
 
 HEADLESS - (0/1) Should the browser run in a headless mode? (without a window)
