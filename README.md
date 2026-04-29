@@ -65,10 +65,10 @@ Configure the bot's behavior by editing the `.env` file. Below are the available
 
 | Variable | Type | Description |
 | :--- | :---: | :--- |
-| `EMAIL` | `str` | Your lingos.pl login email. |
-| `PASSWORD` | `str` | Your lingos.pl login password. |
-| `LESSON_COUNT` | `int` | Number of lessons to complete per session. |
-| `CHANCE_OF_PASSING` | `float` | Chance of the bot being correct. `1` = correct every time, `3` = correct every 3 questions, etc. |
+| `EMAIL` | `Text` | Your lingos.pl login email. |
+| `PASSWORD` | `Text` | Your lingos.pl login password. |
+| `LESSON_COUNT` | `Number` | Number of lessons to complete per session. |
+| `CHANCE_OF_PASSING` | `Decimal` | Chance of the bot being correct. `1` = correct every time, `3` = correct every 3 questions, etc. |
 | `ENABLE_CHALLENGES` | `0/1` | Should the bot automatically select challenges for more points? |
 | `AUTOMATED_LOGIN` | `0/1` | Should the bot log in automatically using the provided credentials? |
 | `HEADLESS` | `0/1` | Should the browser run in headless mode (hidden window, good for a headless server)? |
@@ -76,4 +76,4 @@ Configure the bot's behavior by editing the `.env` file. Below are the available
 | `APPEND_TO_DB` | `0/1` | Should new words be appended to the local database while running? |
 | `LOCKUP_PREVENTION` | `0/1` | Enables the fix to prevent lockups on bad translations. |
 | `CLEAR_DB_BEFORE_SESSION`| `0/1` | Removes all database entries before starting a new session. |
-| `FORCE_WAIT_SEC` | `float` | **For debugging.** How long the code should wait between actions (in seconds). |
+| `FORCE_WAIT_SEC` | `Decimal` | **For debugging.** How long the code should wait between actions (in seconds). |
