@@ -480,6 +480,31 @@ def main():
         # --- Lesson Loop ---
         lessons_to_do = LESSON_COUNT if AUTOMATED_LOGIN else 1
         for i in range(lessons_to_do):
+            if ENABLE_CHALLENGES:
+                # Assuming we are already in the session, we should go back, check if the challenge button is visible and select a challenge if it is
+                driver.back()
+
+                try:
+                    challenges_button = wait_for_element(By.CSS_SELECTOR, "a[data-bs-target='#wyzwaniaModal']", 3)
+                    time.sleep(0.5)  # It won't register the press if it's too fast
+                    challenges_button.click()
+
+                    start_challenge_button = wait_for_element(By.XPATH, "(//a[contains(text(), 'Podejmuję wyzwanie')])[1]", 3)
+                    driver.execute_script("arguments[0].click();", start_challenge_button)  # Execute using JS to avoid "not in view" errors
+
+                    # We don't actually need to exit the prompt since the refresh will bring up back to the dashboard
+
+                except:
+                    # The button is not clickable
+                    print(f"Challenges not present or one is active.\n")
+
+
+            driver.refresh()  # Refresh to go back to the dashboard
+            # Go back into a session
+            wait = WebDriverWait(driver, 20)
+            lesson_button = wait.until(EC.element_to_be_clickable((By.PARTIAL_LINK_TEXT, "UCZ SIĘ")))
+            lesson_button.click()
+
             if AUTOMATED_LOGIN:
                 print(f"\n--- Starting lesson {i + 1} of {lessons_to_do} ---")
 
