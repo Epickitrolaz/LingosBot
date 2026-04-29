@@ -34,6 +34,7 @@ Ensure you have `python`, `python-pip`, `python-venv`, and `firefox` packages in
    ```bash
    ./start.sh
    ```
+---
 
 ### Windows
 
