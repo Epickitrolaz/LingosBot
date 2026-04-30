@@ -526,6 +526,10 @@ def main():
                     # Check if the lesson has ended
                     if "UCZ SIĘ" in element_text and found_element.is_displayed():
                         print("Lesson has ended. Returning to dashboard.")
+
+                        # We need to wait for the "Lesson complete" dialog to then close it
+                        complete_dialog_button = wait_for_element(By.XPATH, "//button[contains(text(), 'Zamknij')]")
+                        complete_dialog_button.click()
                         break  # Exit the inner while loop to finish this lesson
 
                     # Identify and handle the current card type
@@ -545,7 +549,7 @@ def main():
                         foreign_text = foreign.text.strip()[:500]
                         native = wait_for_element(By.ID, "new_teacher_additional_text", 5, EC.visibility_of_element_located)
                         native_text = native.text.strip()[:500]
-                        new_word(native_text, foreign_text)  # Call new_word with collected data
+                        new_word(native_text, foreign_text)
 
                     else:
                         print(f"Unexpected element found or state: Tag={found_element.tag_name}, ID={found_element.get_attribute('id')}, Text='{found_element.text.strip()[:50]}'")
