@@ -14,17 +14,18 @@ import random
 
 load_dotenv()
 
-AUTOMATED_LOGIN = int(os.getenv("AUTOMATED_LOGIN"))
-LESSON_COUNT = int(os.getenv("LESSON_COUNT"))
+AUTOMATED_LOGIN = int(os.getenv("AUTOMATED_LOGIN", "0"))
+LESSON_COUNT = int(os.getenv("LESSON_COUNT", "3"))
 EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
-FORCE_WAIT_SEC = float(os.getenv("FORCE_WAIT_SEC"))
-CHANCE_OF_PASSING = float(os.getenv("CHANCE_OF_PASSING"))
-HEADLESS = int(os.getenv("HEADLESS"))
-SCRAPE = int(os.getenv("SCRAPE"))
-APPEND_TO_DB = int(os.getenv("APPEND_TO_DB"))
-LOCKUP_PREVENTION = int(os.getenv("LOCKUP_PREVENTION"))
-CLEAR_DB_BEFORE_SESSION = int(os.getenv("CLEAR_DB_BEFORE_SESSION"))
+ENABLE_CHALLENGES = os.getenv("ENABLE_CHALLENGES", "0")
+FORCE_WAIT_SEC = float(os.getenv("FORCE_WAIT_SEC", "0"))
+CHANCE_OF_PASSING = float(os.getenv("CHANCE_OF_PASSING", "1.2"))
+HEADLESS = int(os.getenv("HEADLESS", "0"))
+SCRAPE = int(os.getenv("SCRAPE", "0"))
+APPEND_TO_DB = int(os.getenv("APPEND_TO_DB", "1"))
+LOCKUP_PREVENTION = int(os.getenv("LOCKUP_PREVENTION", "1"))
+CLEAR_DB_BEFORE_SESSION = int(os.getenv("CLEAR_DB_BEFORE_SESSION", "0"))
 
 driver = None
 
@@ -479,6 +480,32 @@ def main():
         # --- Lesson Loop ---
         lessons_to_do = LESSON_COUNT if AUTOMATED_LOGIN else 1
         for i in range(lessons_to_do):
+            if ENABLE_CHALLENGES:
+                # Assuming we are already in the session, we should go back, check if the challenge button is visible and select a challenge if it is
+                driver.back()
+
+                try:
+                    challenges_button = wait_for_element(By.CSS_SELECTOR, "a[data-bs-target='#wyzwaniaModal']", 3)
+                    time.sleep(0.5)  # It won't register the press if it's too fast
+                    challenges_button.click()
+
+                    start_challenge_button = wait_for_element(By.XPATH, "(//a[contains(text(), 'Podejmuję wyzwanie')])[1]", 3)
+                    driver.execute_script("arguments[0].click();", start_challenge_button)  # Execute using JS to avoid "not in view" errors
+
+                    # We don't actually need to exit the prompt since the refresh will bring up back to the dashboard
+                    time.sleep(1)  # Wait for the website to register the new challenge before refreshing
+
+                except:
+                    # The button is not clickable
+                    print(f"Challenges not present or one is active.\n")
+
+
+            driver.refresh()  # Refresh to go back to the dashboard
+            # Go back into a session
+            wait = WebDriverWait(driver, 20)
+            lesson_button = wait.until(EC.element_to_be_clickable((By.PARTIAL_LINK_TEXT, "UCZ SIĘ")))
+            lesson_button.click()
+
             if AUTOMATED_LOGIN:
                 print(f"\n--- Starting lesson {i + 1} of {lessons_to_do} ---")
 
