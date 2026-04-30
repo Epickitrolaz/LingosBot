@@ -493,6 +493,7 @@ def main():
                     driver.execute_script("arguments[0].click();", start_challenge_button)  # Execute using JS to avoid "not in view" errors
 
                     # We don't actually need to exit the prompt since the refresh will bring up back to the dashboard
+                    time.sleep(1)  # Wait for the website to register the new challenge before refreshing
 
                 except:
                     # The button is not clickable
