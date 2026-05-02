@@ -78,3 +78,8 @@ Configure the bot's behavior by editing the `.env` file. Below are the available
 | `LOCKUP_PREVENTION` | `0/1` | Enables the fix to prevent lockups on bad translations. |
 | `CLEAR_DB_BEFORE_SESSION`| `0/1` | Removes all database entries before starting a new session. |
 | `FORCE_WAIT_SEC` | `Decimal` | **For debugging.** How long the code should wait between actions (in seconds). |
+
+
+## Planned features:
+- More concise log and a verbose option
+- A way to easily deploy multiple instances on a server
