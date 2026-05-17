@@ -35,18 +35,18 @@ def nuke_db():
     print(f"REMOVING ALL DATABASE ENTRIES...")
 
     try:
-        with open("db.json", "r+") as db_file:
+        with open("db.json", "r+", encoding="utf-8") as db_file:
             data = json.load(db_file)
             data["lingos"] = []
             db_file.seek(0)  # Move pointer to start of file
-            json.dump(data, db_file, indent=4)
+            json.dump(data, db_file, indent=4, ensure_ascii=False)
             db_file.truncate()  # Remove remaining data
 
     except FileNotFoundError:
         print("db.json not found or invalid. Creating new database.")
-        with open("db.json", "w") as db_file:
+        with open("db.json", "w", encoding="utf-8") as db_file:
             data = {"lingos": []}
-            json.dump(data, db_file, indent=4)
+            json.dump(data, db_file, indent=4, ensure_ascii=False)
 
     except Exception as e:
         print(f"Error DB entries: {e}")
@@ -158,17 +158,17 @@ def add_db(question: str, answer: str):
     print(f"Adding to DB: {new_entry}")
 
     try:
-        with open("db.json", "r+") as db_file:
+        with open("db.json", "r+", encoding="utf-8") as db_file:
             data = json.load(db_file)
             data["lingos"].append(new_entry)
             db_file.seek(0)  # Move pointer to start of file
-            json.dump(data, db_file, indent=4)
+            json.dump(data, db_file, indent=4, ensure_ascii=False)
             db_file.truncate()  # Remove existing data
 
     except FileNotFoundError:
-        with open("db.json", "w") as db_file:
+        with open("db.json", "w", encoding="utf-8") as db_file:
             data = {"lingos": [new_entry]}
-            json.dump(data, db_file, indent=4)
+            json.dump(data, db_file, indent=4, ensure_ascii=False)
 
     except Exception as e:
         print(f"Error adding to DB: {e}")
@@ -179,7 +179,7 @@ def remove_db(qustion_answer: str):
     print(f"Removing from DB: {qustion_answer}")
 
     try:
-        with open("db.json", "r+") as db_file:
+        with open("db.json", "r+", encoding="utf-8") as db_file:
             data = json.load(db_file)
             old_length = len(data.get("lingos", []))
 
@@ -194,7 +194,7 @@ def remove_db(qustion_answer: str):
             # If any items were removed, sync the db with the ram
             if old_length - new_length > 0:
                 db_file.seek(0)
-                json.dump(data, db_file, indent=4)
+                json.dump(data, db_file, indent=4, ensure_ascii=False)
                 db_file.truncate()
                 print(f"Removed {old_length - new_length} items from DB.")
             else:
@@ -212,7 +212,7 @@ def query_db(question: str):
     question_str = question.text if hasattr(question, 'text') else str(question)
 
     try:
-        with open("db.json", "r") as db_file:
+        with open("db.json", "r", encoding="utf-8") as db_file:
             data = json.load(db_file)
             for entry in data.get("lingos", []):
                 if question_str in entry:
@@ -599,3 +599,4 @@ if __name__ == "__main__":
     finally:
         if driver and driver.session_id:  # Check if session is still active
             driver.quit()
+
