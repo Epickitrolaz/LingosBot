@@ -77,9 +77,88 @@ Configure the bot's behavior by editing the `.env` file. Below are the available
 | `APPEND_TO_DB` | `0/1` | Should new words be appended to the local database while running? |
 | `LOCKUP_PREVENTION` | `0/1` | Enables the fix to prevent lockups on bad translations. |
 | `CLEAR_DB_BEFORE_SESSION`| `0/1` | Removes all database entries before starting a new session. |
+| `VERBOSE`| `0/1` | **For debugging.** Enables verbose logging. |
 | `FORCE_WAIT_SEC` | `Decimal` | **For debugging.** How long the code should wait between actions (in seconds). |
 
+---
 
-## Planned features:
-- More concise log and a verbose option
-- A way to easily deploy multiple instances on a server
+## 🔄 Updating the Bot
+
+To update to the latest version:
+
+1. Navigate to the bot directory:
+   ```bash
+   cd LingosBot
+   ```
+2. Pull the latest changes:
+   ```bash
+   git pull
+   ```
+3. Re-run the setup script to update dependencies:
+   - **Linux:**
+     ```bash
+     ./setup.sh
+     ```
+   - **Windows:**
+     ```cmd
+     setup.bat
+     ```
+
+---
+
+## 🚀 Deployment
+
+### Desktop/Local Computer
+
+For running the bot on your personal computer:
+
+1. Configure your `.env` file however you like
+
+2. Start the bot:
+   - **Linux:**
+     ```bash
+     ./start.sh
+     ```
+   - **Windows:**
+     ```cmd
+     start.bat
+     ```
+
+### Server/Headless Environment
+
+For automated deployment on a headless server:
+
+1. Configure your `.env` file with server-optimized settings:
+   ```env
+   # User preferences
+   EMAIL=your_email@example.com
+   PASSWORD=your_password
+   LESSON_COUNT=5
+   CHANCE_OF_PASSING=1.2
+   ENABLE_CHALLENGES=1
+   
+   # Server automation settings
+   AUTOMATED_LOGIN=1
+   HEADLESS=1
+   SCRAPE=1
+   APPEND_TO_DB=1
+   LOCKUP_PREVENTION=1
+   CLEAR_DB_BEFORE_SESSION=0
+   VERBOSE=0
+   ```
+
+   **Note:** `LOCKUP_PREVENTION=1` is highly recommended for unattended operation.
+
+2. Set up a cron job to run the bot daily:
+   ```bash
+   crontab -e
+   ```
+   
+   Add the following line to run the bot every day at 9:00 AM:
+   ```cron
+   0 9 * * * cd /path/to/LingosBot && ./start.sh >> /path/to/LingosBot/bot.log 2>&1
+   ```
+   
+   Replace `/path/to/LingosBot` with the actual LingosBot directory.
+
+   **You can see how cron jobs work on [crontab.guru](https://crontab.guru).**
