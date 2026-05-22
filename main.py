@@ -11,6 +11,7 @@ import json
 import sys
 import os
 import random
+import logging
 
 load_dotenv()
 
@@ -26,13 +27,26 @@ SCRAPE = int(os.getenv("SCRAPE", "0"))
 APPEND_TO_DB = int(os.getenv("APPEND_TO_DB", "1"))
 LOCKUP_PREVENTION = int(os.getenv("LOCKUP_PREVENTION", "1"))
 CLEAR_DB_BEFORE_SESSION = int(os.getenv("CLEAR_DB_BEFORE_SESSION", "0"))
+VERBOSE = int(os.getenv("VERBOSE", "0"))
 
 driver = None
+log_level = logging.INFO if VERBOSE else logging.WARNING
 
+logging.basicConfig(level=log_level, format="%(asctime)s - %(levelname)s: %(message)s", datefmt="%H:%M:%S")
+STATUS_LEVEL = 35
+
+def status(self, message, *args, **kwargs):
+    if self.isEnabledFor(STATUS_LEVEL):
+        self._log(STATUS_LEVEL, message, args, **kwargs)
+
+logging.Logger.status = status
+logging.addLevelName(STATUS_LEVEL, "STATUS")
+
+logger = logging.getLogger(__name__)
 
 def nuke_db():
     # This function is essential when running this bot in prod
-    print(f"REMOVING ALL DATABASE ENTRIES...")
+    logger.warning(f"REMOVING ALL DATABASE ENTRIES...")
 
     try:
         with open("db.json", "r+") as db_file:
@@ -43,13 +57,13 @@ def nuke_db():
             db_file.truncate()  # Remove remaining data
 
     except FileNotFoundError:
-        print("db.json not found or invalid. Creating new database.")
+        logger.info("db.json not found or invalid. Creating new database.")
         with open("db.json", "w") as db_file:
             data = {"lingos": []}
             json.dump(data, db_file, indent=4)
 
     except Exception as e:
-        print(f"Error DB entries: {e}")
+        logger.error(f"Error DB entries: {e}")
 
 
 def clean_db(remove_duplicates=True, sort_entries=True):
@@ -60,19 +74,19 @@ def clean_db(remove_duplicates=True, sort_entries=True):
             with open("db.json", "r", encoding="utf-8") as db_file:
                 data = json.load(db_file)
                 if not isinstance(data, dict):
-                    print("Invalid JSON root (not an object). REMOVING ALL DATABASE ENTRIES....")
+                    logger.warning("Invalid JSON root (not an object). REMOVING ALL DATABASE ENTRIES....")
                     data = {}
         except (FileNotFoundError, json.JSONDecodeError):
-            print("db.json not found or invalid. Creating new database.")
+            logger.info("db.json not found or invalid. Creating new database.")
             data = {}
 
         # Ensure "lingos" exists and is a list
         if "lingos" not in data or not isinstance(data["lingos"], list):
-            print("Creating empty 'lingos' list in db.json.")
+            logger.info("Creating empty 'lingos' list in db.json.")
             data["lingos"] = []
 
         if not data["lingos"]:
-            print("Database is empty. Nothing to clean.")
+            logger.info("Database is empty. Nothing to clean.")
             with open("db.json", "w", encoding="utf-8") as db_file:
                 json.dump(data, db_file, indent=4, ensure_ascii=False)
             return
@@ -103,10 +117,10 @@ def clean_db(remove_duplicates=True, sort_entries=True):
         with open("db.json", "w", encoding="utf-8") as db_file:
             json.dump(data, db_file, indent=4, ensure_ascii=False)
 
-        print(f"Database cleaned successfully: {duplicates} duplicates removed. Total {len(cleaned)} entries remain.")
+        logger.status(f"Database cleaned successfully: {duplicates} duplicates removed. Total {len(cleaned)} entries remain.")
 
     except Exception as e:
-        print(f"Error cleaning database: {e}")
+        logger.error(f"Error cleaning database: {e}")
 
 
 def open_website(url: str):
@@ -124,18 +138,19 @@ def open_website(url: str):
         driver.get(url)
 
     except Exception as e:
-        print(f"Error opening website: {e}")
+        logger.error(f"Error opening website: {e}")
         if driver:
             driver.quit()
         raise
 
 
-def wait_for_element(by_strategy, value, timeout=10, condition=EC.presence_of_element_located):
+def wait_for_element(by_strategy, value, timeout=10, condition=EC.presence_of_element_located, log_errors=True):
     time.sleep(FORCE_WAIT_SEC)
     try:
         return WebDriverWait(driver, timeout).until(condition((by_strategy, value)))
     except Exception as e:
-        print(f"Error waiting for element '{value}': {e}")
+        if log_errors:
+            logger.error(f"Error waiting for element '{value}': {e}")
         raise
 
 
@@ -144,9 +159,9 @@ def click_enter_button_only(timeout: int = 5):
     try:
         enter_button = wait_for_element(By.ID, "enterBtn", timeout, EC.element_to_be_clickable)
         enter_button.click()
-        print("Clicked the Enter button")
+        logger.info("Clicked the Enter button")
     except Exception as e:
-        print(f"Error clicking Enter button: {e}")
+        logger.error(f"Error clicking Enter button: {e}")
         raise
 
 
@@ -155,7 +170,7 @@ def add_db(question: str, answer: str):
     question_str = question.text if hasattr(question, 'text') else str(question)
     answer_str = answer.text if hasattr(answer, 'text') else str(answer)
     new_entry = {question_str: answer_str}
-    print(f"Adding to DB: {new_entry}")
+    logger.info(f"Adding to DB: {new_entry}")
 
     try:
         with open("db.json", "r+") as db_file:
@@ -171,12 +186,12 @@ def add_db(question: str, answer: str):
             json.dump(data, db_file, indent=4)
 
     except Exception as e:
-        print(f"Error adding to DB: {e}")
+        logger.error(f"Error adding to DB: {e}")
 
 
 def remove_db(qustion_answer: str):
     time.sleep(FORCE_WAIT_SEC)
-    print(f"Removing from DB: {qustion_answer}")
+    logger.info(f"Removing from DB: {qustion_answer}")
 
     try:
         with open("db.json", "r+") as db_file:
@@ -196,15 +211,15 @@ def remove_db(qustion_answer: str):
                 db_file.seek(0)
                 json.dump(data, db_file, indent=4)
                 db_file.truncate()
-                print(f"Removed {old_length - new_length} items from DB.")
+                logger.info(f"Removed {old_length - new_length} items from DB.")
             else:
-                print(f"No matching entries found, nothing removed.")
+                logger.info(f"No matching entries found, nothing removed.")
 
     except FileNotFoundError:
-        print("DB file not found.")
+        logger.error("DB file not found.")
 
     except Exception as e:
-        print(f"Error adding to DB: {e}")
+        logger.error(f"Error adding to DB: {e}")
 
 
 def query_db(question: str):
@@ -216,17 +231,17 @@ def query_db(question: str):
             data = json.load(db_file)
             for entry in data.get("lingos", []):
                 if question_str in entry:
-                    print(f"Found translation for '{question_str}' in DB.")
+                    logger.info(f"Found translation for '{question_str}' in DB.")
                     return entry[question_str]
-            print(f"Translation for '{question_str}' not found in DB.")
+            logger.info(f"Translation for '{question_str}' not found in DB.")
             return None
 
     except FileNotFoundError:
-        print("db.json not found. Returning None.")
+        logger.info("db.json not found. Returning None.")
         return None
 
     except Exception as e:
-        print(f"Error querying DB: {e}")
+        logger.error(f"Error querying DB: {e}")
         return None
 
 
@@ -239,9 +254,9 @@ def scrape_translations(timeout: int=3):
     try:
         wordsets_button = wait_for_element(By.ID, "menu-big-item-icon-1", timeout, EC.element_to_be_clickable)
         wordsets_button.click()
-        print("Clicked the wordsets button")
+        logger.info("Clicked the wordsets button")
     except Exception as e:
-        print(f"Error clicking wordsets button: {e}")
+        logger.error(f"Error clicking wordsets button: {e}")
         raise
 
     chapter_link_locator = (By.CSS_SELECTOR, 'a[href^="/student-confirmed/wordset/"]')
@@ -249,19 +264,19 @@ def scrape_translations(timeout: int=3):
         WebDriverWait(driver, timeout).until(
             EC.presence_of_element_located(chapter_link_locator)
         )
-        print("Found chapter links on the page.")
+        logger.info("Found chapter links on the page.")
     except TimeoutException:
-        print("Error: Could not find any chapter links within the time limit.")
+        logger.error("Error: Could not find any chapter links within the time limit.")
     
     chapter_elements = driver.find_elements(*chapter_link_locator)
     chapter_urls = [element.get_attribute('href') for element in chapter_elements] # Get all urls with translations in one list
 
     # We need to remove the duplicates, since it's the easiest way to only have one chapter in the db
     unique_urls = list(dict.fromkeys(chapter_urls))
-    print("Removed duplicates in chapter_urls")
+    logger.info("Removed duplicates in chapter_urls")
 
     for i, url in enumerate(unique_urls):
-        print(f"Chapter url: {url}")
+        logger.info(f"Chapter url: {url}")
 
         # Go into that section
         driver.get(url)
@@ -275,9 +290,9 @@ def scrape_translations(timeout: int=3):
             WebDriverWait(driver, timeout).until(
                 EC.presence_of_element_located(container_locator)
             )
-            print("Flashcard items found.")
+            logger.info("Flashcard items found.")
             containers = driver.find_elements(*container_locator)
-            print(f"Found {len(containers)} items to process.")
+            logger.info(f"Found {len(containers)} items to process.")
 
             for i, container in enumerate(containers):
                 try:
@@ -292,14 +307,14 @@ def scrape_translations(timeout: int=3):
                     add_db(element1, element2)
                     add_db(element2, element1)
             
-                    print(f"Item {i + 1}: OK")
+                    logger.info(f"Item {i + 1}: OK")
 
                 except NoSuchElementException:
-                    print("Could not locate elements in containers")
+                    logger.warning("Could not locate elements in containers")
                     continue
 
         except TimeoutException:
-            print("Error: Timed out while waiting for containers")
+            logger.warning("Error: Timed out while waiting for containers")
 
         driver.get("https://lingos.pl/student-confirmed/wordsets")
 
@@ -318,9 +333,9 @@ def translate_without_word():
     try:
         question_content_element = wait_for_element(By.ID, "flashcard_main_text", 10, EC.visibility_of_element_located)
         question_text = question_content_element.text.strip()[:100]  # Use .strip() for clean comparison
-        print(f"To translate: {question_text}")
+        logger.info(f"To translate: {question_text}")
     except Exception as e:
-        print(f"Could not get question content: {e}")
+        logger.warning(f"Could not get question content: {e}")
         return  # Exit if we can't get the question
 
     # Query the local database for a translation
@@ -330,7 +345,7 @@ def translate_without_word():
     # Handle cases: translation not found vs. found
     if translation_from_db is None:
         chance = 0 # Removes the error with the lockup prevention null variable
-        print("Translation not in DB. Revealing answer on page.")
+        logger.info("Translation not in DB. Revealing answer on page.")
         try:
             # Click Enter to reveal the translation
             click_enter_button_only(5)
@@ -341,85 +356,97 @@ def translate_without_word():
                 # Add the new translation to the DB and prepare to enter it
                 add_db(question_text, translation_on_page)
             else:
-                print("Not appending to DB.")
+                logger.info("Not appending to DB.")
 
-            print(f"Translation from page: {translation_on_page}")
+            logger.info(f"Translation from page: {translation_on_page}")
             translation_to_enter = translation_on_page
 
         except Exception as e:
-            print(f"Could not get translation from page after click: {e}")
+            logger.warning(f"Could not get translation from page after click: {e}")
             try:
-                print("Attempting to click Enter to move past failed translation retrieval.")
+                logger.info("Attempting to click Enter to move past failed translation retrieval.")
                 click_enter_button_only(5)
                 click_enter_button_only(5)
             except Exception as ex:
-                print(f"Failed to click Enter after translation retrieval error: {ex}")
+                logger.error(f"Failed to click Enter after translation retrieval error: {ex}")
             return  # Exit if we can't get the translation
 
         # Click Enter to dismiss the correction and proceed to the answer input box
-        print("Clicking Enter to dismiss correction/proceed to answer input if needed.")
+        logger.info("Clicking Enter to dismiss correction/proceed to answer input if needed.")
         click_enter_button_only(5)
     else:
         chance = random.uniform(0.0, CHANCE_OF_PASSING)
-        print(f"Chance: {chance}")
+        logger.info(f"Chance: {chance}")
         if chance >= 1:
             # If the code's randomness chooses to fail this task, enter an empty string
             translation_to_enter = ""
-            print(f"Using an empty translation")
+            logger.info(f"Using an empty translation")
         else:
             # If translation was found in the DB, use it
             translation_to_enter = translation_from_db
-            print(f"Using translation from DB: {translation_to_enter}")
+            logger.info(f"Using translation from DB: {translation_to_enter}")
 
     # Enter the translation into the answer box
     try:
         answer_box = wait_for_element(By.ID, "flashcard_answer_input", 10, EC.element_to_be_clickable)
         if not answer_box.is_displayed() or not answer_box.is_enabled():
-            print("Answer box is not displayed or enabled, assuming auto-corrected or moved on.")
+            logger.info("Answer box is not displayed or enabled, assuming auto-corrected or moved on.")
             click_enter_button_only(5)
             return
         answer_box.send_keys(translation_to_enter)
-        print("Translation entered")
+        logger.info("Translation entered")
 
     except TimeoutException:
-        print(f"Timeout: Answer box 'flashcard_answer_input' not found or not clickable.")
-        print("Attempting to click Enter to move to next card, as input wasn't possible.")
+        logger.warning(f"Timeout: Answer box 'flashcard_answer_input' not found or not clickable.")
+        logger.status("Attempting to click Enter to move to next card, as input wasn't possible.")
         try:
             click_enter_button_only(5)
             click_enter_button_only(5)  # Try double-click to ensure progression
         except Exception as ex:
-            print(f"Failed to click Enter after answer box issue: {ex}")
+            logger.error(f"Failed to click Enter after answer box issue: {ex}")
         return
 
     except Exception as e:
-        print(f"Error entering translation into answer box: {e}")
+        logger.error(f"Error entering translation into answer box: {e}")
         return
 
     # Submit the answer and move to the next card
-    print("Clicking Enter to submit answer.")
+    logger.info("Clicking Enter to submit answer.")
     click_enter_button_only(5)
 
     # Check if the website reported the translation as correct
     if LOCKUP_PREVENTION and chance < 1:
-        # Get the entered translation
-        final_translation_text = driver.find_element(By.ID, "flashcard_error_text")
-        # Check if the incorrect tranlation is visible 
-        final_translation_text_visibility = final_translation_text.value_of_css_property("display")
+        try:
+            # Wait for the checkmark animation to complete
+            time.sleep(0.5)
+            path_elements = driver.find_elements(By.CSS_SELECTOR, "path[stroke]")
+        
+            is_correct = False
+            for path in path_elements:
+                stroke_value = path.get_attribute("stroke")
+                if stroke_value and "rgb(34,173,119)" in stroke_value or "rgb(34, 173, 119)" in stroke_value:
+                    is_correct = True
+                    logger.info("Lockup prevention check: translation correct")
+                    break
 
-        if not "none" in final_translation_text_visibility:
-            print("Warning: translation in the DB doesn't match one on the website, removing the incorrect DB entry...")
+            if not is_correct:
+                logger.status("Translation in the DB doesn't match one on the website, removing the incorrect DB entry...")
+                remove_db(translation_to_enter)
+
+        except Exception as e:
+            logger.warning(f"Could not verify if the translation was correct, removing DB entry...: {e}")
             remove_db(translation_to_enter)
 
     try:
         # Check if the correction/feedback element appears
         wait_for_element(By.ID, "flashcard_error_correct", 5, EC.visibility_of_element_located)
-        print("Correction/feedback visible.")
+        logger.info("Correction/feedback visible.")
     except TimeoutException:
-        print(f"Did not find correction/feedback element ('flashcard_error_correct') after submitting answer within 5s. Page might have moved on or different feedback.")
+        logger.error(f"Did not find correction/feedback element ('flashcard_error_correct') after submitting answer within 5s. Page might have moved on or different feedback.")
     except Exception as e:
-        print(f"Error checking for correction/feedback: {e}")
+        logger.error(f"Error checking for correction/feedback: {e}")
 
-    print("Clicking Enter to move to the next card.")
+    logger.info("Clicking Enter to move to the next card.")
     click_enter_button_only(5)
 
 
@@ -427,10 +454,10 @@ def new_word(native: str, foreign: str):
     time.sleep(FORCE_WAIT_SEC)
     if APPEND_TO_DB:
         add_db(foreign, native)
-        print(f"{foreign}:{native} added to DB")
+        logger.info(f"{foreign}:{native} added to DB")
     else:
-        print("Not appending to DB.")
-    print("Clicking Enter to dismiss new word card.")
+        logger.info("Not appending to DB.")
+    logger.info("Clicking Enter to dismiss new word card.")
     click_enter_button_only(5)
 
 
@@ -440,13 +467,13 @@ def main():
     global AUTOMATED_LOGIN
 
     try:
-        print("Opening website...")
+        logger.info("Opening website...")
         open_website("https://lingos.pl")
-        print("Browser running and website loaded\n")
+        logger.status("Browser running and website loaded\n")
 
         # --- Automated login ---
         if AUTOMATED_LOGIN:
-            print(f"Automated login turned on, will do {LESSON_COUNT} lessons.")
+            logger.status(f"Automated login turned on, will do {LESSON_COUNT} lessons.")
             login_button = wait_for_element(By.CSS_SELECTOR, ".btn.btn-primary.btn-sm.fs-sm.order-lg-3.d-none.d-lg-inline-flex", 20, EC.element_to_be_clickable)
             login_button.click()
 
@@ -467,15 +494,15 @@ def main():
             lesson_button = wait.until(EC.element_to_be_clickable((By.PARTIAL_LINK_TEXT, "UCZ SIĘ")))
             lesson_button.click()
         else:
-            print("Log in to the website and go to the learning page (e.g., 'Learn' section).")
+            logger.info("Log in to the website and go to the learning page (e.g., 'Learn' section).")
             input("Press ENTER after the lesson is loaded: ")
 
         # Only scrape if it's enabled in .env
         if SCRAPE:
-            print("Translation scraping turned on.")
+            logger.info("Translation scraping turned on.")
             scrape_translations(10)
         else:
-            print("Translation scraping disabled, will continue with entries from DB.")
+            logger.info("Translation scraping disabled, will continue with entries from DB.")
 
         # --- Lesson Loop ---
         lessons_to_do = LESSON_COUNT if AUTOMATED_LOGIN else 1
@@ -485,11 +512,11 @@ def main():
                 driver.back()
 
                 try:
-                    challenges_button = wait_for_element(By.CSS_SELECTOR, "a[data-bs-target='#wyzwaniaModal']", 3)
+                    challenges_button = wait_for_element(By.CSS_SELECTOR, "a[data-bs-target='#wyzwaniaModal']", 3, log_errors=False)
                     time.sleep(0.5)  # It won't register the press if it's too fast
                     challenges_button.click()
 
-                    start_challenge_button = wait_for_element(By.XPATH, "(//a[contains(text(), 'Podejmuję wyzwanie')])[1]", 3)
+                    start_challenge_button = wait_for_element(By.XPATH, "(//a[contains(text(), 'Podejmuję wyzwanie')])[1]", 3, log_errors=False)
                     driver.execute_script("arguments[0].click();", start_challenge_button)  # Execute using JS to avoid "not in view" errors
 
                     # We don't actually need to exit the prompt since the refresh will bring up back to the dashboard
@@ -497,7 +524,7 @@ def main():
 
                 except:
                     # The button is not clickable
-                    print(f"Challenges not present or one is active.\n")
+                    logger.status(f"Challenges not present or one is active.\n")
 
 
             driver.refresh()  # Refresh to go back to the dashboard
@@ -507,7 +534,7 @@ def main():
             lesson_button.click()
 
             if AUTOMATED_LOGIN:
-                print(f"\n--- Starting lesson {i + 1} of {lessons_to_do} ---")
+                logger.status(f"\nStarting lesson {i + 1} of {lessons_to_do}")
 
             # --- Task loop ---
             while True:
@@ -517,7 +544,7 @@ def main():
                 lesson_ended_condition = EC.visibility_of_element_located((By.PARTIAL_LINK_TEXT, "UCZ SIĘ"))  # Lesson finished indicator
 
                 try:
-                    print("\nWaiting for a task, new word, or lesson end (max 20s)")
+                    logger.info("\nWaiting for a task, new word, or lesson end (max 20s)")
                     found_element = WebDriverWait(driver, 20).until(
                         EC.any_of(flashcard_title_condition, new_word_span_condition, lesson_ended_condition)
                     )
@@ -525,7 +552,7 @@ def main():
 
                     # Check if the lesson has ended
                     if "UCZ SIĘ" in element_text and found_element.is_displayed():
-                        print("Lesson has ended. Returning to dashboard.")
+                        logger.status("Lesson has ended. Returning to dashboard.")
 
                         # We need to wait for the "Lesson complete" dialog to then close it
                         complete_dialog_button = wait_for_element(By.XPATH, "//button[contains(text(), 'Zamknij')]")
@@ -535,16 +562,16 @@ def main():
                     # Identify and handle the current card type
                     if found_element.get_attribute("id") == "flashcard_title_text":
                         question_type_text = found_element.text.strip()[:100]
-                        print(f"Current Task identified: '{question_type_text}'")
+                        logger.info(f"Current Task identified: '{question_type_text}'")
                         if question_type_text == "Przetłumacz:":
-                            print("Type: translate")
+                            logger.info("Type: translate")
                             translate_without_word()
                         else:
-                            print(f"Unknown task type: '{question_type_text}'. Stopping...")
+                            logger.error(f"Unknown task type: '{question_type_text}'. Stopping...")
                             sys.exit(1)
 
                     elif found_element.tag_name == "span" and "NOWE SŁOWO!" in element_text:
-                        print("A new word found.")
+                        logger.info("A new word found.")
                         foreign = wait_for_element(By.ID, "new_teacher_main_text", 5, EC.visibility_of_element_located)
                         foreign_text = foreign.text.strip()[:500]
                         native = wait_for_element(By.ID, "new_teacher_additional_text", 5, EC.visibility_of_element_located)
@@ -552,38 +579,38 @@ def main():
                         new_word(native_text, foreign_text)
 
                     else:
-                        print(f"Unexpected element found or state: Tag={found_element.tag_name}, ID={found_element.get_attribute('id')}, Text='{found_element.text.strip()[:50]}'")
-                        print("Continuing to next check...")
+                        logger.warning(f"Unexpected element found or state: Tag={found_element.tag_name}, ID={found_element.get_attribute('id')}, Text='{found_element.text.strip()[:50]}'")
+                        logger.info("Continuing to next check...")
 
                 except TimeoutException:
-                    print("Timeout waiting for task (20s). Assuming lesson/session finished.")
+                    logger.warning("Timeout waiting for task (20s). Assuming lesson/session finished.")
                     break  # Exit inner loop if no element appears after 20 seconds
                 except (NoSuchElementException, StaleElementReferenceException) as e:
-                    print(f"Element issue (stale/not found) in main loop: {e}. Retrying...")
+                    logger.warning(f"Element issue (stale/not found) in main loop: {e}. Retrying...")
                     time.sleep(1)  # Short delay before retrying
                     continue
                 except Exception as e:
-                    print(f"An unexpected error occurred in the main loop: {e}")
+                    logger.error(f"An unexpected error occurred in the main loop: {e}")
                     break  # Exit inner loop for other errors
 
             # --- Check and start next lesson ---
             if AUTOMATED_LOGIN and (i + 1) < lessons_to_do:
-                print("Starting the next lesson...")
+                logger.status("Starting the next lesson...")
                 try:
                     next_lesson_button = wait_for_element(By.PARTIAL_LINK_TEXT, "UCZ SIĘ", 20, EC.element_to_be_clickable)
                     next_lesson_button.click()
                 except Exception as e:
-                    print(f"Could not start the next lesson. Stopping. Error: {e}")
+                    logger.error(f"Could not start the next lesson. Stopping. Error: {e}")
                     break  # Exit the outer for loop
 
     except Exception as e:
-        print(f"An error occurred in main execution: {e}")
+        logger.error(f"An error occurred in main execution: {e}")
 
     finally:
         if driver:
-            print("Quitting browser...")
+            logger.info("Quitting browser...")
             driver.quit()
-            print("Browser closed.")
+            logger.info("Browser closed.")
 
 
 if __name__ == "__main__":
@@ -595,7 +622,7 @@ if __name__ == "__main__":
 
         main()
     except Exception as e:
-        print(f"An error occurred in the script's main execution block: {e}")
+        logger.error(f"An error occurred in the script's main execution block: {e}")
     finally:
         if driver and driver.session_id:  # Check if session is still active
             driver.quit()
