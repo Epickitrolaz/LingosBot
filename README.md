@@ -77,4 +77,5 @@ Configure the bot's behavior by editing the `.env` file. Below are the available
 | `APPEND_TO_DB` | `0/1` | Should new words be appended to the local database while running? |
 | `LOCKUP_PREVENTION` | `0/1` | Enables the fix to prevent lockups on bad translations. |
 | `CLEAR_DB_BEFORE_SESSION`| `0/1` | Removes all database entries before starting a new session. |
+| `VERBOSE`| `0/1` | **For debugging.** Enables verbose logging. |
 | `FORCE_WAIT_SEC` | `Decimal` | **For debugging.** How long the code should wait between actions (in seconds). |
